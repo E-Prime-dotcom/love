@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Question</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wine:#2b1320;
+    --wine-deep:#1c0d16;
+    --cream:#fff8f1;
+    --rose:#e8607c;
+    --rose-deep:#c44560;
+    --gold:#d4a256;
+    --plum:#3a1d2b;
+    --muted:#9a7382;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; }
+  body{
+    min-height:100vh;
+    background:radial-gradient(circle at 20% 20%, #3a1d2b 0%, var(--wine) 45%, var(--wine-deep) 100%);
+    font-family:'Outfit', sans-serif;
+    color:var(--cream);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* ---------- ambient floating hearts ---------- */
+  .heart{
+    position:fixed;
+    top:100%;
+    pointer-events:none;
+    color:rgba(232,96,124,0.35);
+    animation:rise linear infinite;
+    user-select:none;
+    z-index:0;
+  }
+  @keyframes rise{ to{ transform:translateY(-120vh) rotate(20deg); opacity:0; } }
+
+  /* ---------- confetti particles ---------- */
+  .confetti{
+    position:fixed;
+    pointer-events:none;
+    z-index:80;
+    animation:confettiPop 1.1s ease-out forwards;
+  }
+  @keyframes confettiPop{
+    0%{ transform:translate(0,0) scale(1) rotate(0deg); opacity:1; }
+    100%{ transform:translate(var(--dx), var(--dy)) scale(0.4) rotate(var(--rot)); opacity:0; }
+  }
+
+  /* ---------- card shell ---------- */
+  .wrap{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:560px;
+  }
+  .progress-track{
+    height:4px;
+    width:100%;
+    background:rgba(255,255,255,0.12);
+    border-radius:4px;
+    margin-bottom:14px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--gold), var(--rose));
+    border-radius:4px;
+    transition:width 0.4s ease;
+  }
+
+  .card{
+    background:var(--cream);
+    color:var(--plum);
+    border-radius:28px;
+    padding:48px 38px;
+    text-align:center;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    min-height:360px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:20px;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .stage{
+    display:none;
+    width:100%;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+    animation:fadeUp 0.5s ease;
+  }
+  .stage.active{ display:flex; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .eyebrow{
+    font-size:0.72rem;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--rose-deep);
+    font-weight:600;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.9rem;
+    line-height:1.28;
+    margin:0;
+    font-style:italic;
+  }
+  h1.straight{ font-style:normal; }
+  p.sub{
+    margin:0;
+    font-size:1rem;
+    color:#6b4a58;
+    line-height:1.55;
+    max-width:400px;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:'Outfit', sans-serif;
+    font-weight:600;
+    font-size:1rem;
+    padding:14px 30px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+  .btn-primary{
+    background:var(--rose);
+    color:#fff;
+    box-shadow:0 12px 24px -8px rgba(232,96,124,0.6);
+  }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 28px -8px rgba(232,96,124,0.7); }
+  .btn-primary:disabled{ opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-ghost{
+    background:transparent;
+    color:var(--rose-deep);
+    border:2px solid #f0dee4;
+  }
+  .btn-ghost:hover{ border-color:var(--rose); }
+
+  .btn-row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
+  /* ---------- name input ---------- */
+  .name-input{
+    font-family:'Fraunces', serif;
+    font-size:1.3rem;
+    text-align:center;
+    border:none;
+    border-bottom:2px solid #f0dee4;
+    background:transparent;
+    color:var(--plum);
+    padding:8px 4px;
+    width:240px;
+  }
+  .name-input:focus{ outline:none; border-color:var(--rose); }
+
+  /* ---------- illustrations ---------- */
+  .illo{ width:120px; height:120px; }
+  .illo path, .illo circle, .illo line{
+    stroke-dasharray:300;
+    stroke-dashoffset:300;
+    animation:draw 1.6s ease forwards;
+  }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+
+  /* ---------- compliments carousel ---------- */
+  .compliment-card{
+    background:#fdeef1;
+    border-radius:18px;
+    padding:26px 24px;
+    max-width:380px;
+    min-height:96px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:1.12rem;
+    color:var(--plum);
+    transition:opacity 0.25s ease;
+  }
+  .compliment-dots{ display:flex; gap:6px; }
+  .compliment-dots .dot{ width:6px; height:6px; border-radius:50%; background:#e6d4d9; }
+  .compliment-dots .dot.seen{ background:var(--rose); }
+
+  /* ---------- the dodging No button ---------- */
+  .choice-row{ position:relative; display:flex; gap:18px; justify-content:center; align-items:center; width:100%; min-height:60px; }
+  .btn-no{ background:transparent; color:#a9818f; border:2px solid #e6d4d9; position:relative; }
+  .btn-no.armed{ position:fixed; z-index:50; transition:top 0.18s ease, left 0.18s ease; }
+
+  /* ---------- preference quiz ---------- */
+  .option-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    width:100%;
+    max-width:400px;
+  }
+  .option-card{
+    border:2px solid #f0dee4;
+    background:#fffdfb;
+    border-radius:16px;
+    padding:16px 12px;
+    cursor:pointer;
+    font-weight:500;
+    font-size:0.92rem;
+    text-align:center;
+    transition:border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  }
+  .option-card:hover{ border-color:var(--rose); transform:translateY(-1px); }
+  .option-card.selected{ border-color:var(--rose); background:#fdeef1; }
+  .option-card .emoji{ font-size:1.5rem; display:block; margin-bottom:6px; }
+
+  /* ---------- date picker ---------- */
+  .date-options{ display:flex; flex-direction:column; gap:10px; width:100%; max-width:360px; }
+  .date-option{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 18px; border-radius:14px; border:2px solid #f0dee4;
+    background:#fffdfb; cursor:pointer; font-weight:500; text-align:left;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .date-option:hover{ border-color:var(--rose); }
+  .date-option.selected{ border-color:var(--rose); background:#fdeef1; }
+  .date-option .day{ font-weight:600; }
+  .date-option .time{ color:var(--muted); font-size:0.85rem; }
+  .date-option .hint{ display:block; font-size:0.74rem; color:var(--rose-deep); margin-top:2px; }
+
+  .custom-date{ width:100%; max-width:360px; display:flex; flex-direction:column; gap:8px; text-align:left; }
+  .custom-date label{ font-size:0.82rem; color:var(--muted); font-weight:500; }
+  .custom-date input{
+    font-family:'Outfit', sans-serif; font-size:1rem; padding:12px 14px;
+    border-radius:12px; border:2px solid #f0dee4; background:#fffdfb; color:var(--plum);
+  }
+  .custom-date input:focus{ outline:none; border-color:var(--rose); }
+
+  /* ---------- final stage ---------- */
+  .final-emoji{ font-size:2.6rem; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+  .summary-box{
+    background:#fdeef1;
+    border-radius:16px;
+    padding:18px 22px;
+    text-align:left;
+    width:100%;
+    max-width:360px;
+    font-size:0.9rem;
+    color:var(--plum);
+    line-height:1.6;
+  }
+  .summary-box b{ color:var(--rose-deep); }
+
+  @media (max-width:480px){
+    .card{ padding:38px 22px; border-radius:22px; }
+    h1{ font-size:1.55rem; }
+    .option-grid{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- pleading floaters on the question stage ---------- */
+  .plz-field{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:1;
+    overflow:hidden;
+  }
+  .plz-item{
+    position:absolute;
+    font-weight:600;
+    color:var(--rose-deep);
+    opacity:0.85;
+    animation:wiggle 2.6s ease-in-out infinite;
+    white-space:nowrap;
+  }
+  @keyframes wiggle{
+    0%,100%{ transform:rotate(-4deg) translateY(0); }
+    50%{ transform:rotate(4deg) translateY(-4px); }
+  }
+
+  /* ---------- surprise reveal ---------- */
+  .illo-small{ width:90px; height:90px; }
+  .surprise-box{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    width:100%;
+    max-width:380px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    transition:max-height 0.5s ease, opacity 0.5s ease, margin 0.5s ease;
+  }
+  .surprise-box.open{
+    max-height:300px;
+    opacity:1;
+    margin-top:4px;
+  }
+  .surprise-text{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:1.05rem;
+    color:var(--plum);
+    background:#fdeef1;
+    border-radius:16px;
+    padding:16px 20px;
+    margin:0;
+    line-height:1.5;
+  }
+
+  /* ---------- screenshot prompt ---------- */
+  .screenshot-block{
+    margin-top:6px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+  }
+  .camera-emoji{
+    font-size:1.8rem;
+    animation:flash 2.2s ease-in-out infinite;
+  }
+  @keyframes flash{
+    0%,80%,100%{ opacity:1; }
+    85%{ opacity:0.3; }
+  }
+  .screenshot-text{ max-width:320px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .heart, .confetti, .final-emoji, .stage{ animation:none !important; }
+    .illo path, .illo circle, .illo line{ stroke-dashoffset:0; animation:none; }
+    .btn-no.armed{ transition:none; }
+    .plz-item, .camera-emoji{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="card" id="card">
+
+    <!-- 0: name capture -->
+    <div class="stage active" data-stage="0">
+      <div class="eyebrow">Before anything else</div>
+      <h1>What should I call you?</h1>
+      <p class="sub">Just so this feels a little less like a form and a little more like a conversation.</p>
+      <input class="name-input" id="nameInput" type="text" placeholder="Type your name" maxlength="30">
+      <button class="btn btn-primary" data-next="1">Continue</button>
+    </div>
+
+    <!-- 1: intro -->
+    <div class="stage" data-stage="1">
+      <div class="eyebrow">Hi <span class="nameSlot">there</span></div>
+      <h1>I've been meaning to ask you something.</h1>
+      <p class="sub">It's nothing bad, I promise. Just give me a minute to set it up properly.</p>
+      <button class="btn btn-primary" data-next="2">Go on then</button>
+    </div>
+
+    <!-- 2: buildup -->
+    <div class="stage" data-stage="2">
+      <svg class="illo" viewBox="0 0 100 100" fill="none" stroke="#e8607c" stroke-width="2.5">
+        <circle cx="50" cy="40" r="18"/>
+        <line x1="50" y1="6" x2="50" y2="14"/>
+        <line x1="50" y1="66" x2="50" y2="74"/>
+        <line x1="14" y1="40" x2="22" y2="40"/>
+        <line x1="78" y1="40" x2="86" y2="40"/>
+        <line x1="24" y1="14" x2="30" y2="20"/>
+        <line x1="76" y1="14" x2="70" y2="20"/>
+        <line x1="24" y1="66" x2="30" y2="60"/>
+        <line x1="76" y1="66" x2="70" y2="60"/>
+      </svg>
+      <div class="eyebrow">Setting the scene</div>
+      <h1>Okay. Deep breath.</h1>
+      <p class="sub">This has been sitting in my head for a while now, so bear with me for a moment.</p>
+      <button class="btn btn-primary" data-next="3">Keep going</button>
+    </div>
+
+    <!-- 3: story A -->
+    <div class="stage" data-stage="3">
+      <svg class="illo" viewBox="0 0 100 100" fill="none" stroke="#d4a256" stroke-width="2.5" stroke-linecap="round">
+        <path d="M30 70 Q30 45 50 45 Q70 45 70 70" />
+        <path d="M30 70 L70 70 L65 80 L35 80 Z" />
+        <path d="M40 35 Q43 28 40 22" />
+        <path d="M50 32 Q53 25 50 19" />
+        <path d="M60 35 Q63 28 60 22" />
+      </svg>
+      <div class="eyebrow">A short story, part one</div>
+      <h1 class="straight">Once, on a perfectly ordinary day,</h1>
+      <p class="sub">something shifted just slightly. Nothing dramatic — more like the quiet moment right before good weather. I noticed you. Then I kept noticing you.</p>
+      <button class="btn btn-primary" data-next="4">What happened next?</button>
+    </div>
+
+    <!-- 4: story B -->
+    <div class="stage" data-stage="4">
+      <svg class="illo" viewBox="0 0 100 100" fill="none" stroke="#e8607c" stroke-width="2.5" stroke-linecap="round">
+        <path d="M20 75 C20 50 35 50 50 50 C65 50 80 50 80 75" />
+        <path d="M50 50 L50 20" />
+        <path d="M50 20 L62 28 L50 36 Z" fill="#e8607c" stroke="none"/>
+      </svg>
+      <div class="eyebrow">A short story, part two</div>
+      <h1 class="straight">And somewhere along the way,</h1>
+      <p class="sub">"noticing" turned into "looking forward to." I started hoping for more ordinary days, just like that first one — only with you actually there.</p>
+      <button class="btn btn-primary" data-next="5">Keep reading</button>
+    </div>
+
+    <!-- 5: compliments carousel -->
+    <div class="stage" data-stage="5">
+      <div class="eyebrow">A few true things</div>
+      <h1 class="straight">While I have your attention—</h1>
+      <div class="compliment-card" id="complimentCard">You have a laugh that makes strangers smile too.</div>
+      <div class="compliment-dots" id="complimentDots"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="nextComplimentBtn">Tell me another</button>
+        <button class="btn btn-primary" data-next="6">Okay, ask me already</button>
+      </div>
+    </div>
+
+    <!-- 6: the question -->
+    <div class="stage" data-stage="6">
+      <div class="plz-field" id="plzField" aria-hidden="true"></div>
+      <div class="eyebrow">The actual question</div>
+      <h1>Will you go out on a date with me?</h1>
+      <p class="sub">One of these buttons is far more reliable than the other. plzzz 🥺</p>
+      <div class="choice-row" id="choiceRow">
+        <button class="btn btn-primary" id="yesBtn">Yes</button>
+        <button class="btn btn-no" id="noBtn">No</button>
+      </div>
+    </div>
+
+    <!-- 7: preference quiz - vibe -->
+    <div class="stage" data-stage="7">
+      <div class="eyebrow">She said yes — quick questions</div>
+      <h1 class="straight">What sounds best to you?</h1>
+      <p class="sub">Pick whatever you're actually in the mood for.</p>
+      <div class="option-grid" data-question="vibe">
+        <div class="option-card" data-value="Cozy café & conversation"><span class="emoji">☕</span>Cozy café &amp; conversation</div>
+        <div class="option-card" data-value="Outdoor adventure"><span class="emoji">🌿</span>Outdoor adventure</div>
+        <div class="option-card" data-value="Dinner somewhere nice"><span class="emoji">🍝</span>Dinner somewhere nice</div>
+        <div class="option-card" data-value="Something a little unexpected"><span class="emoji">🎲</span>Something unexpected</div>
+      </div>
+      <button class="btn btn-primary" id="vibeNextBtn" disabled>Continue</button>
+    </div>
+
+    <!-- 8: preference quiz - time -->
+    <div class="stage" data-stage="8">
+      <div class="eyebrow">Quick questions, part two</div>
+      <h1 class="straight">Morning person or night owl?</h1>
+      <p class="sub">Be honest — this affects planning.</p>
+      <div class="option-grid" data-question="time">
+        <div class="option-card" data-value="Sunrise walks"><span class="emoji">🌅</span>Sunrise walks</div>
+        <div class="option-card" data-value="Golden hour"><span class="emoji">🌇</span>Golden hour</div>
+        <div class="option-card" data-value="Late-night city lights"><span class="emoji">🌃</span>Late-night lights</div>
+        <div class="option-card" data-value="Whenever, honestly"><span class="emoji">🌀</span>Whenever, honestly</div>
+      </div>
+      <button class="btn btn-primary" id="timeNextBtn" disabled>Continue</button>
+    </div>
+
+    <!-- 9: preference quiz - energy -->
+    <div class="stage" data-stage="9">
+      <div class="eyebrow">Quick questions, part three</div>
+      <h1 class="straight">Pick a vibe for the day.</h1>
+      <p class="sub">Last one, promise.</p>
+      <div class="option-grid" data-question="energy">
+        <div class="option-card" data-value="Quiet & intimate"><span class="emoji">🕯️</span>Quiet &amp; intimate</div>
+        <div class="option-card" data-value="Fun & playful"><span class="emoji">🎈</span>Fun &amp; playful</div>
+        <div class="option-card" data-value="Spontaneous & a little wild"><span class="emoji">✨</span>Spontaneous</div>
+        <div class="option-card" data-value="Easygoing, no plans"><span class="emoji">🍃</span>Easygoing</div>
+      </div>
+      <button class="btn btn-primary" id="energyNextBtn" disabled>See date options</button>
+    </div>
+
+    <!-- 10: date picker -->
+    <div class="stage" data-stage="10">
+      <div class="eyebrow">Last step</div>
+      <h1 class="straight">When works for you?</h1>
+      <p class="sub">Pick whichever fits, or set your own date and time.</p>
+
+      <div class="date-options" id="dateOptions">
+        <div class="date-option" data-label="Friday evening, 7:00 PM" data-tag="energy:Fun & playful,energy:Spontaneous & a little wild,time:Late-night city lights">
+          <div><span class="day">Friday</span> <span class="hint" id="fridayHint"></span></div><span class="time">7:00 PM</span>
+        </div>
+        <div class="date-option" data-label="Saturday afternoon, 2:00 PM" data-tag="vibe:Outdoor adventure,time:Golden hour">
+          <div><span class="day">Saturday</span> <span class="hint" id="saturdayHint"></span></div><span class="time">2:00 PM</span>
+        </div>
+        <div class="date-option" data-label="Sunday brunch, 11:00 AM" data-tag="vibe:Cozy café & conversation,time:Sunrise walks,energy:Quiet & intimate">
+          <div><span class="day">Sunday</span> <span class="hint" id="sundayHint"></span></div><span class="time">11:00 AM</span>
+        </div>
+      </div>
+
+      <div class="custom-date">
+        <label for="customDateInput">Or choose your own date</label>
+        <input type="datetime-local" id="customDateInput">
+      </div>
+
+      <button class="btn btn-primary" id="confirmDateBtn" disabled>Confirm</button>
+    </div>
+
+    <!-- 11: final -->
+    <div class="stage" data-stage="11">
+      <div class="final-emoji">🌹</div>
+      <h1>Thanks for not choosing no, <span class="nameSlot">there</span>.</h1>
+      <div class="summary-box" id="finalSummary"></div>
+      <p class="sub">I'll be counting down the days.</p>
+
+      <button class="btn btn-ghost" id="revealBtn">🎁 Show me the surprise</button>
+
+      <div class="surprise-box" id="surpriseBox">
+        <svg class="illo illo-small" viewBox="0 0 100 100" fill="none" stroke="#e8607c" stroke-width="2.5" stroke-linecap="round">
+          <rect x="20" y="45" width="60" height="35" rx="4"/>
+          <path d="M20 58 L80 58"/>
+          <path d="M50 45 L50 80"/>
+          <path d="M50 45 C30 25 25 45 50 45 C75 45 70 25 50 45 Z"/>
+        </svg>
+        <p class="surprise-text">🎉 Surprise: I'm planning every last detail of this date. All you have to do is show up and be exactly you.</p>
+      </div>
+
+      <div class="screenshot-block">
+        <span class="camera-emoji">📸</span>
+        <p class="sub screenshot-text">Take a screenshot of this page and send it to me — let's make it official!</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ---------- name personalization ----------
+  const nameInput = document.getElementById('nameInput');
+  const nameSlots = document.querySelectorAll('.nameSlot');
+  nameInput.addEventListener('input', () => {
+    const val = nameInput.value.trim();
+    nameSlots.forEach(s => s.textContent = val || 'there');
+  });
+
+  // ---------- stage navigation ----------
+  const stages = document.querySelectorAll('.stage');
+  const stageOrder = Array.from(stages).map(s => s.dataset.stage);
+  const progressFill = document.getElementById('progressFill');
+
+  function goTo(n){
+    stages.forEach(s => s.classList.toggle('active', s.dataset.stage === String(n)));
+    const idx = stageOrder.indexOf(String(n));
+    const pct = (idx / (stageOrder.length - 1)) * 100;
+    progressFill.style.width = pct + '%';
+  }
+  document.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => goTo(btn.dataset.next));
+  });
+  goTo('0');
+
+  // ---------- compliments carousel ----------
+  const compliments = [
+    "You have a laugh that makes strangers smile too.",
+    "You remember the small things, and somehow that means everything.",
+    "You're effortlessly funny, even when you're not trying to be.",
+    "Your kindness has a way of rearranging a whole room.",
+    "You make ordinary days feel worth writing about.",
+    "You ask good questions and actually listen to the answers."
+  ];
+  let complimentIndex = 0;
+  const complimentCard = document.getElementById('complimentCard');
+  const complimentDots = document.getElementById('complimentDots');
+  compliments.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' seen' : '');
+    complimentDots.appendChild(d);
+  });
+  document.getElementById('nextComplimentBtn').addEventListener('click', () => {
+    complimentIndex = (complimentIndex + 1) % compliments.length;
+    complimentCard.style.opacity = 0;
+    setTimeout(() => {
+      complimentCard.textContent = compliments[complimentIndex];
+      complimentCard.style.opacity = 1;
+    }, 180);
+    Array.from(complimentDots.children).forEach((d, i) => {
+      d.classList.toggle('seen', i <= complimentIndex);
+    });
+  });
+
+  // ---------- confetti ----------
+  function burstConfetti(x, y, count = 24){
+    const emojis = ['🌸','💛','✨','💕','🌷'];
+    for (let i = 0; i < count; i++){
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.style.fontSize = (0.8 + Math.random() * 1.0) + 'rem';
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 80 + Math.random() * 160;
+      el.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      el.style.setProperty('--dy', Math.sin(angle) * dist - 60 + 'px');
+      el.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1200);
+    }
+  }
+
+  // ---------- the dodging No button ----------
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  let dodgeCount = 0;
+  const dodgeLines = ["No","Wait—","Try again","Nope, still no","Not happening","Keep trying","So close","Almost!"];
+
+  function armNoButton(){
+    if (noBtn.classList.contains('armed')) return;
+    const rect = noBtn.getBoundingClientRect();
+    noBtn.classList.add('armed');
+    noBtn.style.left = rect.left + 'px';
+    noBtn.style.top = rect.top + 'px';
+  }
+
+  function dodge(clientX, clientY){
+    armNoButton();
+    const btnW = noBtn.offsetWidth, btnH = noBtn.offsetHeight, margin = 16;
+    const maxLeft = window.innerWidth - btnW - margin;
+    const maxTop = window.innerHeight - btnH - margin;
+    let newLeft, newTop, attempts = 0;
+    do {
+      newLeft = margin + Math.random() * Math.max(1, (maxLeft - margin));
+      newTop = margin + Math.random() * Math.max(1, (maxTop - margin));
+      attempts++;
+    } while (Math.hypot(newLeft - clientX, newTop - clientY) < 180 && attempts < 12);
+    noBtn.style.left = newLeft + 'px';
+    noBtn.style.top = newTop + 'px';
+    dodgeCount++;
+    noBtn.textContent = dodgeLines[Math.min(dodgeCount, dodgeLines.length - 1)];
+  }
+
+  noBtn.addEventListener('mouseenter', e => dodge(e.clientX, e.clientY));
+  noBtn.addEventListener('mousemove', e => dodge(e.clientX, e.clientY));
+  noBtn.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; dodge(t.clientX, t.clientY); }, { passive:false });
+  noBtn.addEventListener('click', e => { e.preventDefault(); dodge(e.clientX, e.clientY); });
+
+  yesBtn.addEventListener('click', (e) => {
+    burstConfetti(e.clientX, e.clientY, 30);
+    goTo('7');
+  });
+
+  // ---------- preference quiz ----------
+  const answers = {};
+  function wireQuestion(question, nextBtnId, nextStage){
+    const grid = document.querySelector(`.option-grid[data-question="${question}"]`);
+    const cards = grid.querySelectorAll('.option-card');
+    const nextBtn = document.getElementById(nextBtnId);
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        answers[question] = card.dataset.value;
+        nextBtn.disabled = false;
+      });
+    });
+    nextBtn.addEventListener('click', () => goTo(nextStage));
+  }
+  wireQuestion('vibe', 'vibeNextBtn', '8');
+  wireQuestion('time', 'timeNextBtn', '9');
+  wireQuestion('energy', 'energyNextBtn', '10');
+
+  // ---------- date picker, tailored hints ----------
+  function applyHints(){
+    const hintMap = { fridayHint:'', saturdayHint:'', sundayHint:'' };
+    document.querySelectorAll('.date-option').forEach(opt => {
+      const tags = (opt.dataset.tag || '').split(',').map(t => t.trim());
+      const matched = tags.some(tag => {
+        const [q, v] = tag.split(':');
+        return answers[q] === v;
+      });
+      const hintEl = opt.querySelector('.hint');
+      if (hintEl && matched) hintEl.textContent = '— fits what you picked';
+    });
+  }
+
+  const dateOptions = document.querySelectorAll('.date-option');
+  const customDateInput = document.getElementById('customDateInput');
+  const confirmBtn = document.getElementById('confirmDateBtn');
+  let chosenLabel = null;
+
+  function selectOption(el){
+    dateOptions.forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    chosenLabel = el.dataset.label;
+    customDateInput.value = '';
+    confirmBtn.disabled = false;
+  }
+  dateOptions.forEach(opt => opt.addEventListener('click', () => selectOption(opt)));
+  customDateInput.addEventListener('change', () => {
+    if (customDateInput.value){
+      dateOptions.forEach(o => o.classList.remove('selected'));
+      const d = new Date(customDateInput.value);
+      chosenLabel = d.toLocaleString(undefined, { weekday:'long', month:'long', day:'numeric', hour:'numeric', minute:'2-digit' });
+      confirmBtn.disabled = false;
+    }
+  });
+
+  confirmBtn.addEventListener('click', (e) => {
+    burstConfetti(e.clientX, e.clientY, 36);
+    const summary = document.getElementById('finalSummary');
+    summary.innerHTML = `
+      <div><b>When:</b> ${chosenLabel || 'TBD'}</div>
+      <div><b>Vibe:</b> ${answers.vibe || '—'}</div>
+      <div><b>Time of day:</b> ${answers.time || '—'}</div>
+      <div><b>Energy:</b> ${answers.energy || '—'}</div>
+    `;
+    goTo('11');
+  });
+
+  // hook hints whenever entering the date-picker stage
+  document.querySelectorAll('[data-next="10"], #energyNextBtn').forEach(() => {});
+  document.getElementById('energyNextBtn').addEventListener('click', applyHints);
+
+  // ---------- floating "plz" texts on the question stage ----------
+  const plzField = document.getElementById('plzField');
+  const plzWords = ['plz','pretty please','pls 🥺','plzzz 🙏','i beg 💕','c\'mon','pls pls','🥹 plz'];
+  plzWords.forEach((word, i) => {
+    const el = document.createElement('span');
+    el.className = 'plz-item';
+    el.textContent = word;
+    el.style.left = (5 + Math.random() * 80) + '%';
+    el.style.top = (5 + Math.random() * 85) + '%';
+    el.style.fontSize = (0.7 + Math.random() * 0.6) + 'rem';
+    el.style.animationDelay = (Math.random() * 2) + 's';
+    plzField.appendChild(el);
+  });
+
+  // ---------- surprise reveal ----------
+  const revealBtn = document.getElementById('revealBtn');
+  const surpriseBox = document.getElementById('surpriseBox');
+  revealBtn.addEventListener('click', (e) => {
+    const isOpen = surpriseBox.classList.toggle('open');
+    revealBtn.textContent = isOpen ? '🎁 Hide the surprise' : '🎁 Show me the surprise';
+    if (isOpen) burstConfetti(e.clientX, e.clientY, 20);
+  });
+
+  // ---------- ambient floating hearts ----------
+  const symbols = ['❀','♥','✿'];
+  for (let i = 0; i < 18; i++){
+    const h = document.createElement('div');
+    h.className = 'heart';
+    h.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    h.style.left = Math.random() * 100 + 'vw';
+    h.style.animationDuration = (10 + Math.random() * 14) + 's';
+    h.style.animationDelay = (Math.random() * 14) + 's';
+    h.style.fontSize = (0.9 + Math.random() * 1.4) + 'rem';
+    document.body.appendChild(h);
+  }
+</script>
+</body>
+</html>
